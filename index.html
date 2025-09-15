@@ -3,135 +3,152 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>GitHub Image Hosting</title>
+  <title>Apurupa Gallery</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    /* Disable right click and text selection */
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(to right, #232526, #414345);
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      user-select: none;
+      background-color: #023e8a;
     }
-    .fade-in {
-      animation: fadeIn 0.8s ease-in-out;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to   { opacity: 1; }
+    body::-webkit-scrollbar {
+      display: none;
     }
   </style>
 </head>
-<body class="text-white min-h-screen flex flex-col items-center justify-start py-10 px-4">
+<body class="text-white select-none" oncontextmenu="return false;">
 
-  <!-- Login Screen -->
-  <div id="loginScreen" class="w-full max-w-sm bg-white/10 p-6 rounded-lg shadow-lg backdrop-blur-md fade-in">
-    <h2 class="text-2xl font-bold text-center mb-4">Login to View Images</h2>
-    <input id="username" type="text" placeholder="Username" class="mb-3 w-full p-2 rounded bg-white/20 text-white focus:outline-none">
-    <input id="password" type="password" placeholder="Password" class="mb-4 w-full p-2 rounded bg-white/20 text-white focus:outline-none">
-    <button onclick="login()" class="w-full bg-blue-500 hover:bg-blue-600 p-2 rounded transition">Login</button>
+  <!-- Navbar -->
+  <nav class="bg-[#0077b6] p-4 shadow-md">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-2xl font-bold">Apurupa Gallery</h1>
+      <button id="logoutBtn" class="hidden bg-[#90e0ef] text-black px-4 py-2 rounded hover:bg-white">Logout</button>
+    </div>
+  </nav>
+
+  <!-- Login Form -->
+  <div id="loginSection" class="flex justify-center items-center min-h-screen">
+    <div class="bg-white text-black p-8 rounded shadow-lg w-full max-w-md">
+      <h2 class="text-2xl font-bold mb-4 text-center">Login to Apurupa Gallery</h2>
+      <input id="username" type="text" placeholder="Username" class="w-full mb-4 px-4 py-2 border rounded" />
+      <input id="password" type="password" placeholder="Password" class="w-full mb-4 px-4 py-2 border rounded" />
+      <button onclick="login()" class="w-full bg-[#0077b6] text-white px-4 py-2 rounded hover:bg-[#0096c7]">Login</button>
+      <p id="loginError" class="text-red-600 mt-2 hidden">Invalid credentials</p>
+    </div>
   </div>
 
-  <!-- Main App -->
-  <div id="app" class="hidden w-full max-w-4xl fade-in">
-
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-6 w-full">
-      <h1 class="text-3xl font-bold">📸 My Image Host</h1>
-      <button onclick="logout()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded">Logout</button>
-    </div>
-
-    <!-- Image Upload Instructions -->
-    <div class="bg-white/10 p-4 rounded-lg mb-6">
-      <p class="text-white text-sm">
-        🚀 To upload new images, add them to the <code>/images</code> folder in this repository and push to GitHub.
-      </p>
-    </div>
-
-    <!-- Gallery -->
-    <div id="gallery" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full"></div>
+  <!-- Gallery Section -->
+  <div id="gallerySection" class="container mx-auto p-4 hidden">
+    <div id="gallery" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
   </div>
 
-  <!-- Fullscreen Viewer -->
-  <div id="fullscreenViewer" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center hidden z-50">
-    <img id="fullImage" src="" class="max-w-full max-h-full rounded shadow-xl">
-    <button onclick="closeFullscreen()" class="absolute top-4 right-4 bg-red-600 text-white px-4 py-2 rounded">Close</button>
+  <!-- Fullscreen Modal -->
+  <div id="modal" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center hidden z-50">
+    <img id="modal-img" class="max-h-full max-w-full" src="" alt="Full Image">
+    <button onclick="closeModal()" class="absolute top-4 right-4 bg-[#90e0ef] text-black px-4 py-2 rounded hover:bg-white">Close</button>
+    <button id="copy-url-btn" class="absolute bottom-4 right-4 bg-[#0077b6] px-4 py-2 rounded hover:bg-[#00b4d8]">📋 Copy URL</button>
   </div>
 
   <script>
-    const repoBaseURL = "https://aynaghor-studio.github.io/galley_startup/images/"; // Replace this
+    // 🔐 Hardcoded login credentials
+    const USERNAME = "admin";
+    const PASSWORD = "apurupa123";
 
-    // List your hosted image files here (manual or via GitHub API if dynamic)
-    const imageFiles = [
-      "image1.jpg",
-      "image2.png",
-      "image3.jpeg"
-    ];
+    const loginSection = document.getElementById("loginSection");
+    const gallerySection = document.getElementById("gallerySection");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const loginError = document.getElementById("loginError");
 
     function login() {
-      const user = document.getElementById('username').value;
-      const pass = document.getElementById('password').value;
-
-      if (user === 'admin' && pass === 'admin') {
-        localStorage.setItem('loggedIn', 'true');
-        document.getElementById('loginScreen').classList.add('hidden');
-        document.getElementById('app').classList.remove('hidden');
-        loadImages();
+      const user = document.getElementById("username").value;
+      const pass = document.getElementById("password").value;
+      if (user === USERNAME && pass === PASSWORD) {
+        localStorage.setItem("loggedIn", "true");
+        showGallery();
       } else {
-        alert("Invalid login!");
+        loginError.classList.remove("hidden");
       }
     }
 
-    function logout() {
-      localStorage.removeItem('loggedIn');
-      location.reload();
+    function showGallery() {
+      loginSection.classList.add("hidden");
+      gallerySection.classList.remove("hidden");
+      logoutBtn.classList.remove("hidden");
+      loadImages();
     }
 
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.removeItem("loggedIn");
+      location.reload();
+    });
+
+    window.onload = () => {
+      if (localStorage.getItem("loggedIn") === "true") {
+        showGallery();
+      }
+    };
+
+    // 🖼️ List of .jpg images — UPDATE this list when you add images
+    const imageFilenames = [
+      "image1.jpg",
+      "image2.jpg",
+      "image3.jpg",
+      "image4.jpg"
+    ];
+
+    const baseURL = window.location.origin + "/images/";
+
     function loadImages() {
-      const gallery = document.getElementById('gallery');
-      gallery.innerHTML = '';
-
-      imageFiles.forEach(filename => {
-        const url = repoBaseURL + filename;
-
-        const wrapper = document.createElement('div');
-        wrapper.className = "bg-white/10 p-2 rounded-lg relative group transition hover:scale-105 duration-300";
-
-        const img = document.createElement('img');
-        img.src = url;
-        img.className = "rounded w-full cursor-pointer";
-        img.onclick = () => openFullscreen(url);
-
-        const copyBtn = document.createElement('button');
-        copyBtn.innerText = "Copy URL";
-        copyBtn.className = "absolute bottom-2 right-2 text-xs px-2 py-1 bg-blue-500 hover:bg-blue-600 rounded hidden group-hover:block";
-        copyBtn.onclick = () => {
-          navigator.clipboard.writeText(url);
-          alert("Image URL copied!");
-        };
-
-        wrapper.appendChild(img);
-        wrapper.appendChild(copyBtn);
-        gallery.appendChild(wrapper);
+      const gallery = document.getElementById("gallery");
+      gallery.innerHTML = "";
+      imageFilenames.forEach(filename => {
+        const img = document.createElement("img");
+        img.src = `images/${filename}`;
+        img.alt = filename;
+        img.className = "rounded shadow-lg cursor-pointer hover:scale-105 transform transition duration-300";
+        img.onclick = () => openModal(filename);
+        gallery.appendChild(img);
       });
     }
 
-    function openFullscreen(url) {
-      document.getElementById('fullImage').src = url;
-      document.getElementById('fullscreenViewer').classList.remove('hidden');
+    // Modal logic
+    const modal = document.getElementById('modal');
+    const modalImg = document.getElementById('modal-img');
+    const copyBtn = document.getElementById('copy-url-btn');
+
+    function openModal(filename) {
+      modal.classList.remove('hidden');
+      modalImg.src = `images/${filename}`;
+      copyBtn.setAttribute('data-url', `${baseURL}${filename}`);
     }
 
-    function closeFullscreen() {
-      document.getElementById('fullscreenViewer').classList.add('hidden');
-      document.getElementById('fullImage').src = '';
+    function closeModal() {
+      modal.classList.add('hidden');
     }
 
-    // Auto-login check
-    window.onload = () => {
-      if (localStorage.getItem('loggedIn') === 'true') {
-        document.getElementById('loginScreen').classList.add('hidden');
-        document.getElementById('app').classList.remove('hidden');
-        loadImages();
+    // 📋 Copy image URL
+    copyBtn.addEventListener('click', () => {
+      const url = copyBtn.getAttribute('data-url');
+      navigator.clipboard.writeText(url)
+        .then(() => {
+          copyBtn.innerText = "✅ Copied!";
+          setTimeout(() => copyBtn.innerText = "📋 Copy URL", 1500);
+        })
+        .catch(() => alert("Failed to copy URL"));
+    });
+
+    // ⛔ Block Dev Tools (basic)
+    document.addEventListener("keydown", function (e) {
+      if (
+        e.key === "F12" ||
+        (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "C" || e.key === "J")) ||
+        (e.ctrlKey && e.key === "U")
+      ) {
+        e.preventDefault();
       }
-    };
+    });
   </script>
 </body>
 </html>
-
