@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GitHub Image Hosting</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #232526, #414345);
+    }
+    .fade-in {
+      animation: fadeIn 0.8s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+  </style>
+</head>
+<body class="text-white min-h-screen flex flex-col items-center justify-start py-10 px-4">
+
+  <!-- Login Screen -->
+  <div id="loginScreen" class="w-full max-w-sm bg-white/10 p-6 rounded-lg shadow-lg backdrop-blur-md fade-in">
+    <h2 class="text-2xl font-bold text-center mb-4">Login to View Images</h2>
+    <input id="username" type="text" placeholder="Username" class="mb-3 w-full p-2 rounded bg-white/20 text-white focus:outline-none">
+    <input id="password" type="password" placeholder="Password" class="mb-4 w-full p-2 rounded bg-white/20 text-white focus:outline-none">
+    <button onclick="login()" class="w-full bg-blue-500 hover:bg-blue-600 p-2 rounded transition">Login</button>
+  </div>
+
+  <!-- Main App -->
+  <div id="app" class="hidden w-full max-w-4xl fade-in">
+
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6 w-full">
+      <h1 class="text-3xl font-bold">📸 My Image Host</h1>
+      <button onclick="logout()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded">Logout</button>
+    </div>
+
+    <!-- Image Upload Instructions -->
+    <div class="bg-white/10 p-4 rounded-lg mb-6">
+      <p class="text-white text-sm">
+        🚀 To upload new images, add them to the <code>/images</code> folder in this repository and push to GitHub.
+      </p>
+    </div>
+
+    <!-- Gallery -->
+    <div id="gallery" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full"></div>
+  </div>
+
+  <!-- Fullscreen Viewer -->
+  <div id="fullscreenViewer" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center hidden z-50">
+    <img id="fullImage" src="" class="max-w-full max-h-full rounded shadow-xl">
+    <button onclick="closeFullscreen()" class="absolute top-4 right-4 bg-red-600 text-white px-4 py-2 rounded">Close</button>
+  </div>
+
+  <script>
+    const repoBaseURL = "https://yourusername.github.io/your-repo-name/images/"; // Replace this
+
+    // List your hosted image files here (manual or via GitHub API if dynamic)
+    const imageFiles = [
+      "image1.jpg",
+      "image2.png",
+      "image3.jpeg"
+    ];
+
+    function login() {
+      const user = document.getElementById('username').value;
+      const pass = document.getElementById('password').value;
+
+      if (user === 'admin' && pass === 'admin') {
+        localStorage.setItem('loggedIn', 'true');
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+        loadImages();
+      } else {
+        alert("Invalid login!");
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('loggedIn');
+      location.reload();
+    }
+
+    function loadImages() {
+      const gallery = document.getElementById('gallery');
+      gallery.innerHTML = '';
+
+      imageFiles.forEach(filename => {
+        const url = repoBaseURL + filename;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = "bg-white/10 p-2 rounded-lg relative group transition hover:scale-105 duration-300";
+
+        const img = document.createElement('img');
+        img.src = url;
+        img.className = "rounded w-full cursor-pointer";
+        img.onclick = () => openFullscreen(url);
+
+        const copyBtn = document.createElement('button');
+        copyBtn.innerText = "Copy URL";
+        copyBtn.className = "absolute bottom-2 right-2 text-xs px-2 py-1 bg-blue-500 hover:bg-blue-600 rounded hidden group-hover:block";
+        copyBtn.onclick = () => {
+          navigator.clipboard.writeText(url);
+          alert("Image URL copied!");
+        };
+
+        wrapper.appendChild(img);
+        wrapper.appendChild(copyBtn);
+        gallery.appendChild(wrapper);
+      });
+    }
+
+    function openFullscreen(url) {
+      document.getElementById('fullImage').src = url;
+      document.getElementById('fullscreenViewer').classList.remove('hidden');
+    }
+
+    function closeFullscreen() {
+      document.getElementById('fullscreenViewer').classList.add('hidden');
+      document.getElementById('fullImage').src = '';
+    }
+
+    // Auto-login check
+    window.onload = () => {
+      if (localStorage.getItem('loggedIn') === 'true') {
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+        loadImages();
+      }
+    };
+  </script>
+</body>
+</html>
