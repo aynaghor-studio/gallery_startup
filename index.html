@@ -79,7 +79,7 @@
       loadImages();
     }
 
-    document.getElementById("logoutBtn").addEventListener("click", () => {
+    logoutBtn.addEventListener("click", () => {
       localStorage.removeItem("loggedIn");
       location.reload();
     });
@@ -90,25 +90,45 @@
       }
     };
 
-    // 🖼️ List of .jpg images — UPDATE this list when you add images
-    const imageFilenames = [
-      "Riddhiman Ghosh.jpg",
-      "Saikat Roy.jpg",
-      "logo.jpg",
-      ""
-    ];
+    // GitHub API URL to fetch contents of images folder
+    const GITHUB_API_URL = 'https://api.github.com/repos/aynaghor-studio/gallery_startup/contents/images';
+    const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif'];
 
-    const baseURL = window.location.origin + "/images/";
+    // Fetch image files from GitHub repo dynamically
+    async function fetchImageFiles() {
+      try {
+        const response = await fetch(GITHUB_API_URL);
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        const files = await response.json();
+        return files
+          .filter(file => IMAGE_EXTENSIONS.some(ext => file.name.toLowerCase().endsWith(ext)))
+          .map(file => ({
+            name: file.name,
+            url: `https://raw.githubusercontent.com/aynaghor-studio/gallery_startup/main/images/${encodeURIComponent(file.name)}`
+          }));
+      } catch (error) {
+        console.error('Error fetching image files:', error);
+        return [];
+      }
+    }
 
-    function loadImages() {
-      const gallery = document.getElementById("gallery");
-      gallery.innerHTML = "";
-      imageFilenames.forEach(filename => {
-        const img = document.createElement("img");
-        img.src = `images/${filename}`;
-        img.alt = filename;
-        img.className = "rounded shadow-lg cursor-pointer hover:scale-105 transform transition duration-300";
-        img.onclick = () => openModal(filename);
+    // Load images into gallery
+    async function loadImages() {
+      const images = await fetchImageFiles();
+      const gallery = document.getElementById('gallery');
+      gallery.innerHTML = '';
+
+      if (images.length === 0) {
+        gallery.innerHTML = '<p class="text-center text-white col-span-full">No images found in the GitHub repo.</p>';
+        return;
+      }
+
+      images.forEach(image => {
+        const img = document.createElement('img');
+        img.src = image.url;
+        img.alt = image.name;
+        img.className = 'rounded shadow-lg cursor-pointer hover:scale-105 transform transition duration-300';
+        img.onclick = () => openModal(image);
         gallery.appendChild(img);
       });
     }
@@ -118,17 +138,18 @@
     const modalImg = document.getElementById('modal-img');
     const copyBtn = document.getElementById('copy-url-btn');
 
-    function openModal(filename) {
+    function openModal(image) {
       modal.classList.remove('hidden');
-      modalImg.src = `images/${filename}`;
-      copyBtn.setAttribute('data-url', `${baseURL}${filename}`);
+      modalImg.src = image.url;
+      modalImg.alt = image.name;
+      copyBtn.setAttribute('data-url', image.url);
     }
 
     function closeModal() {
       modal.classList.add('hidden');
     }
 
-    // 📋 Copy image URL
+    // Copy image URL button
     copyBtn.addEventListener('click', () => {
       const url = copyBtn.getAttribute('data-url');
       navigator.clipboard.writeText(url)
@@ -137,6 +158,11 @@
           setTimeout(() => copyBtn.innerText = "📋 Copy URL", 1500);
         })
         .catch(() => alert("Failed to copy URL"));
+    });
+
+    // Close modal on clicking outside the image
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
     });
 
     // ⛔ Block Dev Tools (basic)
